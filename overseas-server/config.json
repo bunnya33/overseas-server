@@ -1,0 +1,13 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8788
+  },
+  "security": {
+    "token": "change-this-token-before-deploy"
+  },
+  "speedTest": {
+    "maxTransferBytes": 33554432,
+    "maxConcurrentTransfers": 1
+  }
+}

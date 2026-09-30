@@ -1,0 +1,35 @@
+{
+  "dashboard": {
+    "title": "链路观察台",
+    "relayName": "国内中转",
+    "overseasName": "国外 VPN"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8787
+  },
+  "probe": {
+    "intervalMs": 3000,
+    "timeoutMs": 2500,
+    "historySize": 600,
+    "degradedLatencyMs": 220,
+    "degradedJitterMs": 80,
+    "downAfterFailures": 3
+  },
+  "speedTest": {
+    "downloadBytes": 8388608,
+    "uploadBytes": 4194304,
+    "maxTransferBytes": 33554432,
+    "timeoutMs": 30000,
+    "maxConcurrentTransfers": 2,
+    "agentToken": ""
+  },
+  "storage": {
+    "settingsFile": "data/settings.json"
+  },
+  "admin": {
+    "sessionTtlHours": 24,
+    "loginMaxAttempts": 8,
+    "loginWindowMinutes": 15
+  }
+}

@@ -1,0 +1,6 @@
+.env
+node_modules/
+coverage/
+*.log
+domestic-server/data/settings.json
+domestic-server/data/settings.json.bak

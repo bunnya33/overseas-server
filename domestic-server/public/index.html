@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>链路观察台</title>
+    <link rel="stylesheet" href="/styles.css?v=2">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1 id="dashboard-title">链路观察台</h1>
+          <p>NETWORK PATH OBSERVER</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <a class="admin-link" href="/admin">管理后台</a>
+        <span class="sync-state"><i id="sync-dot"></i><span id="sync-text">正在连接</span></span>
+        <time id="clock">--:--:--</time>
+        <button id="refresh-button" class="icon-button" type="button" title="立即刷新" aria-label="立即刷新">↻</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="route-band" aria-label="网络链路状态">
+        <div class="route-inner">
+          <div class="route-node">
+            <span class="node-icon">L</span>
+            <div><b>本地设备</b><small id="client-address">当前浏览器</small></div>
+          </div>
+          <div class="route-link" id="client-route-link">
+            <div class="link-line"><span></span></div>
+            <div><b id="client-route-value">等待采样</b><small>本地 → 国内</small></div>
+          </div>
+          <div class="route-node">
+            <span class="node-icon relay">CN</span>
+            <div><b id="relay-name">国内中转</b><small>监控服务</small></div>
+          </div>
+          <div class="route-link" id="overseas-route-link">
+            <div class="link-line"><span></span></div>
+            <div><b id="overseas-route-value">等待采样</b><small>国内 → 国外</small></div>
+          </div>
+          <div class="route-node">
+            <span class="node-icon overseas">OS</span>
+            <div><b id="overseas-name">国外 VPN</b><small id="overseas-endpoint">未配置</small></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="workspace">
+        <section class="metric-grid" aria-label="链路摘要">
+          <article class="metric-card overall-card">
+            <div class="metric-heading"><span>综合状态</span><span class="status-pill waiting" id="overall-status">采集中</span></div>
+            <strong id="overall-label">正在建立基线</strong>
+            <p id="overall-detail">首轮探测将在数秒内完成</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-heading"><span>本地 → 国内</span><span class="mini-dot waiting" id="client-dot"></span></div>
+            <strong><span id="client-latency">--</span><small> ms</small></strong>
+            <p>抖动 <b id="client-jitter">--</b> ms · 失败 <b id="client-loss">--</b>%</p>
+          </article>
+          <article class="metric-card">
+            <div class="metric-heading"><span>国内 → 国外</span><span class="mini-dot waiting" id="overseas-dot"></span></div>
+            <strong><span id="overseas-latency">--</span><small> ms</small></strong>
+            <p>抖动 <b id="overseas-jitter">--</b> ms · 失败 <b id="overseas-loss">--</b>%</p>
+          </article>
+          <article class="metric-card sample-card">
+            <div class="metric-heading"><span>连续监测</span><span>LIVE</span></div>
+            <strong><span id="sample-count">0</span><small> 次</small></strong>
+            <p id="sample-window">等待第一批数据</p>
+          </article>
+        </section>
+
+        <section class="main-grid">
+          <article class="panel chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>实时延迟</h2>
+                <p>最近链路往返时间</p>
+              </div>
+              <div class="chart-legend" aria-label="图例">
+                <span><i class="legend-client"></i>本地 → 国内</span>
+                <span><i class="legend-overseas"></i>国内 → 国外</span>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="latency-chart" aria-label="两段链路延迟趋势图"></canvas>
+              <div class="chart-empty" id="chart-empty">等待延迟样本</div>
+            </div>
+          </article>
+
+          <aside class="panel diagnosis-panel">
+            <div class="panel-header">
+              <div><h2>链路诊断</h2><p id="diagnosis-time">等待数据</p></div>
+              <span class="diagnosis-mark waiting" id="diagnosis-mark">?</span>
+            </div>
+            <div class="diagnosis-body">
+              <h3 id="diagnosis-title">正在采集数据</h3>
+              <p id="diagnosis-copy">至少完成一次两段链路探测后显示判断。</p>
+            </div>
+            <dl class="signal-list">
+              <div><dt>DNS 解析</dt><dd id="dns-value">--</dd></div>
+              <div><dt>TCP / TLS 建连</dt><dd id="connect-value">--</dd></div>
+              <div><dt>P95 延迟</dt><dd id="p95-value">--</dd></div>
+              <div><dt>连续失败</dt><dd id="failure-streak">0 次</dd></div>
+            </dl>
+          </aside>
+        </section>
+
+        <section class="panel speed-panel">
+          <div class="speed-intro">
+            <div class="panel-header">
+              <div><h2>按需带宽测试</h2><p id="speed-last-run">尚未测速</p></div>
+            </div>
+            <button id="speed-button" class="primary-button" type="button"><span aria-hidden="true">▶</span> 开始测速</button>
+          </div>
+          <div class="speed-results">
+            <div class="speed-route">
+              <span>本地 → 国内</span>
+              <div><b id="local-download">--</b><small> Mbps 下载</small></div>
+              <div><b id="local-upload">--</b><small> Mbps 上传</small></div>
+            </div>
+            <div class="speed-route">
+              <span>国内 → 国外</span>
+              <div><b id="remote-download">--</b><small> Mbps 下载</small></div>
+              <div><b id="remote-upload">--</b><small> Mbps 上传</small></div>
+            </div>
+          </div>
+          <div class="speed-progress" id="speed-progress" hidden><span></span><b id="speed-progress-text">准备测速</b></div>
+        </section>
+
+        <section class="panel event-panel">
+          <div class="panel-header">
+            <div><h2>故障时间线</h2><p>仅记录状态变化</p></div>
+            <span class="event-count" id="event-count">0 条</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>时间</th><th>节点</th><th>事件</th><th>状态</th></tr></thead>
+              <tbody id="event-rows"><tr><td colspan="4" class="empty-row">暂无状态变化</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/app.js?v=2"></script>
+  </body>
+</html>
