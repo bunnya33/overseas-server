@@ -8,7 +8,13 @@
 
 ## Linux 安装
 
-在两台 Linux 服务器上分别获取项目并运行安装脚本：
+在两台 Linux 服务器上分别运行同一条命令，按提示选择本机节点类型和监听端口：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bunnya33/overseas-server/main/bootstrap.sh | sudo bash
+```
+
+该命令需要 `curl`、`tar` 和交互终端；引导脚本会下载完整项目并运行安装脚本。也可以手动获取项目再安装：
 
 ```bash
 git clone https://github.com/bunnya33/overseas-server.git
@@ -21,7 +27,7 @@ sudo bash install.sh
 - `1` 国内管理节点，默认监听 `8787`。
 - `2` 国外测速节点，默认监听 `8788`。
 
-安装脚本会询问监听端口、创建 `netpath` 系统账号、生成管理员密码或探针令牌、注册并启动 `netpath.service`。首次安装时请记录终端显示的密码或令牌；重新运行安装脚本会保留原有后台账号、服务器列表和探针令牌。更新代码时在新版项目目录再次运行同一安装脚本即可。
+安装脚本会询问监听端口、创建 `netpath` 系统账号、生成管理员密码或探针令牌、注册并启动 `netpath.service`。首次安装时请记录终端显示的密码或令牌；重新运行单命令或安装脚本会保留原有后台账号、服务器列表和探针令牌。执行单命令安装会以 root 权限运行 GitHub 仓库中的代码，请先确认仓库来源可信。
 
 安装后运行 `sudo netpath` 打开管理菜单。也可以直接使用：
 
