@@ -23,6 +23,7 @@ test('installer migrates old targets and preserves saved state on rerun', (t) =>
   const configPath = path.join(tempDir, 'config.json');
   const settingsPath = path.join(tempDir, 'settings.json');
   fs.writeFileSync(configPath, JSON.stringify({
+    dashboard: { overseasName: '国外 VPN' },
     server: { host: '0.0.0.0', port: 8787 },
     probe: {},
     speedTest: {},
@@ -33,6 +34,7 @@ test('installer migrates old targets and preserves saved state on rerun', (t) =>
   const migrated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   const configured = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   assert.equal(configured.server.port, 9001);
+  assert.equal(configured.dashboard.overseasName, '国外节点');
   assert.equal(configured.targets, undefined);
   assert.equal(migrated.activeTargetId, 'old-vpn');
   assert.equal(migrated.targets[0].label, '旧节点');

@@ -43,6 +43,7 @@ if (command === 'install') {
     ? config.targets.filter((target) => target && target.id && target.host && target.port)
     : [];
   if (role === 'domestic') {
+    if (config.dashboard?.overseasName === '国外 VPN') config.dashboard.overseasName = '国外节点';
     config.storage ||= { settingsFile: 'data/settings.json' };
     config.admin ||= { sessionTtlHours: 24, loginMaxAttempts: 8, loginWindowMinutes: 15 };
     delete config.targets;

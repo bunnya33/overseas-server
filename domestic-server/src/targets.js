@@ -33,7 +33,7 @@ export function normalizeTarget(input, id) {
     id,
     label: text(input.label, '节点名称', 80),
     host: text(input.host, '服务器地址', 255),
-    port: port(input.port, '服务端口'),
+    port: port(input.port, '探测端口'),
     mode,
     rejectUnauthorized: input.rejectUnauthorized !== false,
     speedTestUrl: optionalUrl(input.speedTestUrl),

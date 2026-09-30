@@ -168,7 +168,7 @@ async function handleNodeAction(event) {
     } else if (action === 'test') {
       toast(`正在测试 ${target.label}`);
       const result = await api(`/api/admin/targets/${encodeURIComponent(target.id)}/test`, { method: 'POST' });
-      const connection = result.connection.ok ? `服务端口可达 ${result.connection.latencyMs} ms` : `服务端口异常：${result.connection.error}`;
+      const connection = result.connection.ok ? `探测端口可达 ${result.connection.latencyMs} ms` : `探测端口异常：${result.connection.error}`;
       const agent = result.agent.configured
         ? result.agent.ok ? `测速探针可达 ${result.agent.latencyMs} ms` : `测速探针异常：${result.agent.error}`
         : '未配置测速探针';

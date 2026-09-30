@@ -148,7 +148,7 @@ function renderDiagnosis(client, remote, target) {
   } else if (client.state === 'down' && remote.state === 'healthy') {
     state = 'down'; title = '本地接入链路异常'; copy = '国内机到国外节点正常，故障更可能位于本地网络、运营商入口或本地到中转机之间。';
   } else if (client.state === 'healthy' && ['down', 'degraded'].includes(remote.state)) {
-    state = remote.state; title = remote.state === 'down' ? '跨境链路中断' : '跨境链路出现波动'; copy = '本地到国内机正常，异常集中在国内中转到国外 VPN 的路径、HAProxy 上游或 VPN 服务。';
+    state = remote.state; title = remote.state === 'down' ? '跨境链路中断' : '跨境链路出现波动'; copy = '本地到国内机正常，请检查国内中转机到国外探测端口的网络路径与目标服务。';
   } else if (['down', 'degraded'].includes(client.state) && ['down', 'degraded'].includes(remote.state)) {
     state = 'down'; title = '两段链路同时异常'; copy = '优先检查国内中转机负载、出口网络和 HAProxy；也可能存在本地网络与跨境路径的叠加故障。';
   } else if (client.state === 'healthy' && remote.state === 'healthy') {

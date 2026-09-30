@@ -59,6 +59,16 @@ reset_token() {
   systemctl restart "$SERVICE"
 }
 
+show_token() {
+  if [[ "$role" != "overseas" ]]; then
+    printf '仅国外测速节点支持此操作。\n' >&2
+    return 1
+  fi
+  local token
+  token="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).security.token' "$config_path")"
+  printf '测速令牌: %s\n' "$token"
+}
+
 run_command() {
   case "$1" in
     start|stop|restart|status) systemctl "$1" "$SERVICE" ;;
@@ -66,8 +76,9 @@ run_command() {
     port) change_port ;;
     password) reset_password ;;
     token) reset_token ;;
+    show-token) show_token ;;
     info) show_info ;;
-    *) printf '命令: netpath [start|stop|restart|status|logs|port|password|token|info]\n'; exit 1 ;;
+    *) printf '命令: netpath [start|stop|restart|status|logs|port|password|token|show-token|info]\n'; exit 1 ;;
   esac
 }
 
@@ -77,7 +88,7 @@ while true; do
   printf '\n链路观察台管理菜单\n'
   show_info
   printf '\n1. 启动服务  2. 停止服务  3. 重启服务  4. 服务状态\n5. 查看日志  6. 修改端口'
-  if [[ "$role" == "domestic" ]]; then printf '  7. 重设后台密码\n'; else printf '  7. 重设探针令牌\n'; fi
+  if [[ "$role" == "domestic" ]]; then printf '  7. 重设后台密码\n'; else printf '  7. 重设探针令牌  8. 查看测速令牌\n'; fi
   printf '0. 退出\n'
   read -r -p '请选择: ' choice
   case "$choice" in
@@ -88,6 +99,7 @@ while true; do
     5) run_command logs ;;
     6) run_command port ;;
     7) if [[ "$role" == "domestic" ]]; then run_command password; else run_command token; fi ;;
+    8) if [[ "$role" == "overseas" ]]; then run_command show-token; else printf '无效选择。\n'; fi ;;
     0) exit 0 ;;
     *) printf '无效选择。\n' ;;
   esac

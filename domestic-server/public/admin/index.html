@@ -61,9 +61,9 @@
       <form id="node-form" method="dialog">
         <div class="dialog-heading"><div><p class="eyebrow">SERVER PROFILE</p><h2 id="dialog-title">新增节点</h2></div><button class="plain-icon" id="close-dialog" type="button" aria-label="关闭">×</button></div>
         <div class="dialog-body">
-          <label>节点名称<input name="label" placeholder="例如：东京 VPN 01" maxlength="80" required></label>
-          <div class="field-row"><label>服务器 IP / 域名<input name="host" placeholder="203.0.113.10" required></label><label>VPN 端口<input name="port" type="number" min="1" max="65535" value="443" required></label></div>
-          <div class="field-row"><label>探测协议<select name="mode"><option value="tcp">TCP</option><option value="tls">TLS</option></select></label><label>测速探针地址<input name="speedTestUrl" type="url" placeholder="https://example.com:8788"></label></div>
+          <label>节点名称<input name="label" placeholder="例如：东京节点 01" maxlength="80" required></label>
+          <div class="field-row"><label>国外服务器 IP / 域名<input name="host" placeholder="203.0.113.10" required></label><label>探测端口<input name="port" type="number" min="1" max="65535" value="8788" required></label></div>
+          <div class="field-row"><label>探测协议<select name="mode"><option value="tcp">TCP</option><option value="tls">TLS</option></select></label><label>测速探针地址<input name="speedTestUrl" type="url" placeholder="http://203.0.113.10:8788"></label></div>
           <label>测速令牌<input name="speedTestToken" type="password" autocomplete="off" placeholder="与国外节点令牌保持一致"></label>
           <label class="check-row"><input name="enabled" type="checkbox" checked><span>启用该节点的探测与测速</span></label>
         </div>
@@ -71,6 +71,6 @@
       </form>
     </dialog>
     <div class="toast" id="toast" role="status" hidden></div>
-    <script type="module" src="/admin/app.js?v=2"></script>
+    <script type="module" src="/admin/app.js?v=3"></script>
   </body>
 </html>

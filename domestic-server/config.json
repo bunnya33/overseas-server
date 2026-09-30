@@ -2,7 +2,7 @@
   "dashboard": {
     "title": "链路观察台",
     "relayName": "国内中转",
-    "overseasName": "国外 VPN"
+    "overseasName": "国外节点"
   },
   "server": {
     "host": "0.0.0.0",
