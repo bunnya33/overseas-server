@@ -23,7 +23,7 @@ test('installer migrates old targets and preserves saved state on rerun', (t) =>
   const configPath = path.join(tempDir, 'config.json');
   const settingsPath = path.join(tempDir, 'settings.json');
   fs.writeFileSync(configPath, JSON.stringify({
-    dashboard: { overseasName: '国外 VPN' },
+    dashboard: { relayName: '国内中转', overseasName: '国外 VPN' },
     server: { host: '0.0.0.0', port: 8787 },
     probe: {},
     speedTest: {},
@@ -34,15 +34,20 @@ test('installer migrates old targets and preserves saved state on rerun', (t) =>
   const migrated = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   const configured = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   assert.equal(configured.server.port, 9001);
-  assert.equal(configured.dashboard.overseasName, '国外节点');
+  assert.equal(configured.dashboard.relayName, '管理节点');
+  assert.equal(configured.dashboard.overseasName, '测速节点');
   assert.equal(configured.targets, undefined);
   assert.equal(migrated.activeTargetId, 'old-vpn');
   assert.equal(migrated.targets[0].label, '旧节点');
 
+  configured.dashboard = { relayName: '我的管理服务器', overseasName: '东京测试机' };
+  fs.writeFileSync(configPath, JSON.stringify(configured));
   run(['install', 'domestic', configPath, settingsPath], { NETPATH_PORT: '9002', NETPATH_PASSWORD: 'different-password-456' });
   const preserved = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
   assert.deepEqual(preserved, migrated);
-  assert.equal(JSON.parse(fs.readFileSync(configPath, 'utf8')).server.port, 9002);
+  const reinstalled = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  assert.equal(reinstalled.server.port, 9002);
+  assert.deepEqual(reinstalled.dashboard, configured.dashboard);
 });
 
 test('installer generates and preserves an overseas token', (t) => {

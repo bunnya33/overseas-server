@@ -81,7 +81,7 @@ function render() {
     list.replaceChildren(makeElement('div', 'empty-list'));
     const empty = list.firstChild;
     empty.append(makeElement('strong', '', '还没有保存的服务器'));
-    empty.append(makeElement('p', '', '添加国外服务器后即可开始监测并在节点之间切换。'));
+    empty.append(makeElement('p', '', '添加测速节点后即可开始监测并在节点之间切换。'));
     return;
   }
 

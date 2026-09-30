@@ -15,13 +15,15 @@ if [[ ! -f "$ETC_FILE" ]]; then
 fi
 source "$ETC_FILE"
 role="$NETPATH_ROLE"
+role_label='管理节点'
+if [[ "$role" == "overseas" ]]; then role_label='测速节点'; fi
 config_path="$INSTALL_DIR/$role/config.json"
 settings_path="${SETTINGS_FILE:-/var/lib/netpath/settings.json}"
 
 show_info() {
   local port
   port="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).server.port' "$config_path")"
-  printf '节点类型: %s\n监听端口: %s\n配置文件: %s\n' "$role" "$port" "$config_path"
+  printf '节点类型: %s\n监听端口: %s\n配置文件: %s\n' "$role_label" "$port" "$config_path"
   if [[ "$role" == "domestic" ]]; then
     printf '节点数据: %s\n后台: http://服务器IP:%s/admin\n' "$settings_path" "$port"
   else
@@ -39,7 +41,7 @@ change_port() {
 }
 
 reset_password() {
-  if [[ "$role" != "domestic" ]]; then printf '仅国内管理节点支持此操作。\n'; return; fi
+  if [[ "$role" != "domestic" ]]; then printf '仅管理节点支持此操作。\n'; return; fi
   local password
   read -r -s -p '新密码（留空则随机生成）: ' password
   printf '\n'
@@ -49,7 +51,7 @@ reset_password() {
 }
 
 reset_token() {
-  if [[ "$role" != "overseas" ]]; then printf '仅国外测速节点支持此操作。\n'; return; fi
+  if [[ "$role" != "overseas" ]]; then printf '仅测速节点支持此操作。\n'; return; fi
   local token
   read -r -s -p '新令牌（留空则随机生成）: ' token
   printf '\n'
@@ -61,7 +63,7 @@ reset_token() {
 
 show_token() {
   if [[ "$role" != "overseas" ]]; then
-    printf '仅国外测速节点支持此操作。\n' >&2
+    printf '仅测速节点支持此操作。\n' >&2
     return 1
   fi
   local token

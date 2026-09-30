@@ -36,7 +36,7 @@
         <header class="page-top"><span>网络管理 / <b id="breadcrumb">服务器节点</b></span><a href="/">查看监控页 ↗</a></header>
         <div class="content-inner">
           <section id="nodes-view">
-            <div class="page-heading"><div><p class="eyebrow">NODE MANAGEMENT</p><h1>服务器节点</h1><p>管理已保存的国外服务器，并选择当前监测目标。</p></div><button id="add-button" class="button primary" type="button">新增节点</button></div>
+            <div class="page-heading"><div><p class="eyebrow">NODE MANAGEMENT</p><h1>服务器节点</h1><p>管理已保存的测速节点，并选择当前监测目标。</p></div><button id="add-button" class="button primary" type="button">新增节点</button></div>
             <div class="notice" id="override-notice" hidden>当前使用环境变量指定的节点。移除 OVERSEAS_HOST 后，后台切换的节点才会生效。</div>
             <div class="status-strip"><div><span>当前节点</span><strong id="active-node-name">尚未选择</strong></div><div><span>节点状态</span><strong id="active-node-state">未配置</strong></div><div><span>已保存</span><strong id="node-count">0 台</strong></div></div>
             <div class="section-heading"><h2>节点列表</h2><span id="list-updated"></span></div>
@@ -62,15 +62,15 @@
         <div class="dialog-heading"><div><p class="eyebrow">SERVER PROFILE</p><h2 id="dialog-title">新增节点</h2></div><button class="plain-icon" id="close-dialog" type="button" aria-label="关闭">×</button></div>
         <div class="dialog-body">
           <label>节点名称<input name="label" placeholder="例如：东京节点 01" maxlength="80" required></label>
-          <div class="field-row"><label>国外服务器 IP / 域名<input name="host" placeholder="203.0.113.10" required></label><label>探测端口<input name="port" type="number" min="1" max="65535" value="8788" required></label></div>
+          <div class="field-row"><label>测速节点 IP / 域名<input name="host" placeholder="203.0.113.10" required></label><label>探测端口<input name="port" type="number" min="1" max="65535" value="8788" required></label></div>
           <div class="field-row"><label>探测协议<select name="mode"><option value="tcp">TCP</option><option value="tls">TLS</option></select></label><label>测速探针地址<input name="speedTestUrl" type="url" placeholder="http://203.0.113.10:8788"></label></div>
-          <label>测速令牌<input name="speedTestToken" type="password" autocomplete="off" placeholder="与国外节点令牌保持一致"></label>
+          <label>测速令牌<input name="speedTestToken" type="password" autocomplete="off" placeholder="与测速节点令牌保持一致"></label>
           <label class="check-row"><input name="enabled" type="checkbox" checked><span>启用该节点的探测与测速</span></label>
         </div>
         <div class="dialog-actions"><button class="button secondary" id="cancel-dialog" type="button">取消</button><button class="button primary" id="save-node" type="submit">保存节点</button></div>
       </form>
     </dialog>
     <div class="toast" id="toast" role="status" hidden></div>
-    <script type="module" src="/admin/app.js?v=3"></script>
+    <script type="module" src="/admin/app.js?v=4"></script>
   </body>
 </html>

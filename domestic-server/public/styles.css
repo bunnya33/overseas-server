@@ -57,11 +57,14 @@ button { font: inherit; }
 .route-band { background: var(--surface); border-bottom: 1px solid var(--line); }
 .route-inner { max-width: 1440px; min-height: 112px; padding: 22px 24px; margin: auto; display: grid; grid-template-columns: auto minmax(120px, 1fr) auto minmax(120px, 1fr) auto; align-items: center; gap: 22px; }
 .route-node { display: flex; align-items: center; gap: 11px; min-width: 145px; }
+.route-node div { min-width: 0; max-width: 180px; }
 .node-icon { width: 42px; height: 42px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; background: #27332e; color: white; font: 700 12px Consolas, monospace; }
 .node-icon.relay { background: var(--blue); }
 .node-icon.overseas { background: var(--violet); }
 .route-node b, .route-link b { display: block; font-size: 13px; font-weight: 650; white-space: nowrap; }
-.route-node small, .route-link small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.route-node small, .route-link small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+.route-node b, .route-node small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.route-link small { overflow-wrap: anywhere; }
 .route-link { text-align: center; min-width: 0; }
 .link-line { height: 2px; margin: 0 0 11px; position: relative; background: #b9c4be; }
 .link-line::before, .link-line::after { content: ""; position: absolute; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: #b9c4be; }
@@ -149,6 +152,7 @@ button { font: inherit; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 th { padding: 11px 18px; color: var(--muted); background: #fafbf9; text-align: left; font-weight: 600; border-bottom: 1px solid var(--line); }
 td { padding: 13px 18px; border-bottom: 1px solid #edf0ee; }
+.event-time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 tbody tr:last-child td { border-bottom: 0; }
 .event-state { display: inline-flex; align-items: center; gap: 6px; }
 .event-state i { width: 7px; height: 7px; border-radius: 50%; background: var(--red); }

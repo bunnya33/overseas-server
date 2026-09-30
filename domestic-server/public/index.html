@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
     <title>链路观察台</title>
-    <link rel="stylesheet" href="/styles.css?v=2">
+    <link rel="stylesheet" href="/styles.css?v=3">
   </head>
   <body>
     <header class="topbar">
@@ -33,19 +33,19 @@
           </div>
           <div class="route-link" id="client-route-link">
             <div class="link-line"><span></span></div>
-            <div><b id="client-route-value">等待采样</b><small>本地 → 国内</small></div>
+            <div><b id="client-route-value">等待采样</b><small data-route="client">本地 → 管理节点</small></div>
           </div>
           <div class="route-node">
-            <span class="node-icon relay">CN</span>
-            <div><b id="relay-name">国内中转</b><small>监控服务</small></div>
+            <span class="node-icon relay">M</span>
+            <div><b id="relay-name">管理节点</b><small>监控服务</small></div>
           </div>
           <div class="route-link" id="overseas-route-link">
             <div class="link-line"><span></span></div>
-            <div><b id="overseas-route-value">等待采样</b><small>国内 → 国外</small></div>
+            <div><b id="overseas-route-value">等待采样</b><small data-route="remote">管理节点 → 测速节点</small></div>
           </div>
           <div class="route-node">
-            <span class="node-icon overseas">OS</span>
-            <div><b id="overseas-name">国外节点</b><small id="overseas-endpoint">未配置</small></div>
+            <span class="node-icon overseas">S</span>
+            <div><b id="overseas-name">测速节点</b><small id="overseas-endpoint">未配置</small></div>
           </div>
         </div>
       </section>
@@ -58,12 +58,12 @@
             <p id="overall-detail">首轮探测将在数秒内完成</p>
           </article>
           <article class="metric-card">
-            <div class="metric-heading"><span>本地 → 国内</span><span class="mini-dot waiting" id="client-dot"></span></div>
+            <div class="metric-heading"><span data-route="client">本地 → 管理节点</span><span class="mini-dot waiting" id="client-dot"></span></div>
             <strong><span id="client-latency">--</span><small> ms</small></strong>
             <p>抖动 <b id="client-jitter">--</b> ms · 失败 <b id="client-loss">--</b>%</p>
           </article>
           <article class="metric-card">
-            <div class="metric-heading"><span>国内 → 国外</span><span class="mini-dot waiting" id="overseas-dot"></span></div>
+            <div class="metric-heading"><span data-route="remote">管理节点 → 测速节点</span><span class="mini-dot waiting" id="overseas-dot"></span></div>
             <strong><span id="overseas-latency">--</span><small> ms</small></strong>
             <p>抖动 <b id="overseas-jitter">--</b> ms · 失败 <b id="overseas-loss">--</b>%</p>
           </article>
@@ -82,8 +82,8 @@
                 <p>最近链路往返时间</p>
               </div>
               <div class="chart-legend" aria-label="图例">
-                <span><i class="legend-client"></i>本地 → 国内</span>
-                <span><i class="legend-overseas"></i>国内 → 国外</span>
+                <span><i class="legend-client"></i><span data-route="client">本地 → 管理节点</span></span>
+                <span><i class="legend-overseas"></i><span data-route="remote">管理节点 → 测速节点</span></span>
               </div>
             </div>
             <div class="chart-wrap">
@@ -119,12 +119,12 @@
           </div>
           <div class="speed-results">
             <div class="speed-route">
-              <span>本地 → 国内</span>
+              <span data-route="client" data-bidirectional>本地 ↔ 管理节点</span>
               <div><b id="local-download">--</b><small> Mbps 下载</small></div>
               <div><b id="local-upload">--</b><small> Mbps 上传</small></div>
             </div>
             <div class="speed-route">
-              <span>国内 → 国外</span>
+              <span data-route="remote" data-bidirectional>管理节点 ↔ 测速节点</span>
               <div><b id="remote-download">--</b><small> Mbps 下载</small></div>
               <div><b id="remote-upload">--</b><small> Mbps 上传</small></div>
             </div>
@@ -139,7 +139,7 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>时间</th><th>节点</th><th>事件</th><th>状态</th></tr></thead>
+              <thead><tr><th>日期 / 时间</th><th>节点</th><th>事件</th><th>状态</th></tr></thead>
               <tbody id="event-rows"><tr><td colspan="4" class="empty-row">暂无状态变化</td></tr></tbody>
             </table>
           </div>
@@ -147,6 +147,6 @@
       </div>
     </main>
 
-    <script type="module" src="/app.js?v=3"></script>
+    <script type="module" src="/app.js?v=4"></script>
   </body>
 </html>

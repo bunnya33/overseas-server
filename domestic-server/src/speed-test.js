@@ -22,7 +22,7 @@ function speedEndpoint(baseUrl, path, bytes) {
 
 export async function runRemoteSpeedTest(target, options) {
   if (!target.speedTestUrl) {
-    const error = new Error('国外节点未配置测速端点');
+    const error = new Error('测速节点未配置测速端点');
     error.code = 'SPEED_TEST_NOT_CONFIGURED';
     throw error;
   }
@@ -33,7 +33,7 @@ export async function runRemoteSpeedTest(target, options) {
     speedEndpoint(target.speedTestUrl, 'api/speed/download', options.downloadBytes),
     { headers, cache: 'no-store', signal: AbortSignal.timeout(options.timeoutMs) },
   );
-  if (!downloadResponse.ok) throw new Error(`国外下载端点返回 HTTP ${downloadResponse.status}`);
+  if (!downloadResponse.ok) throw new Error(`测速节点下载端点返回 HTTP ${downloadResponse.status}`);
   const downloaded = (await downloadResponse.arrayBuffer()).byteLength;
   const downloadDurationMs = performance.now() - downloadStarted;
 
@@ -45,7 +45,7 @@ export async function runRemoteSpeedTest(target, options) {
     body: uploadBody,
     signal: AbortSignal.timeout(options.timeoutMs),
   });
-  if (!uploadResponse.ok) throw new Error(`国外上传端点返回 HTTP ${uploadResponse.status}`);
+  if (!uploadResponse.ok) throw new Error(`测速节点上传端点返回 HTTP ${uploadResponse.status}`);
   const uploadResult = await uploadResponse.json();
   const uploadDurationMs = performance.now() - uploadStarted;
 

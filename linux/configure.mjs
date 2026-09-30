@@ -43,14 +43,15 @@ if (command === 'install') {
     ? config.targets.filter((target) => target && target.id && target.host && target.port)
     : [];
   if (role === 'domestic') {
-    if (config.dashboard?.overseasName === '国外 VPN') config.dashboard.overseasName = '国外节点';
+    if (config.dashboard?.relayName === '国内中转') config.dashboard.relayName = '管理节点';
+    if (['国外 VPN', '国外节点'].includes(config.dashboard?.overseasName)) config.dashboard.overseasName = '测速节点';
     config.storage ||= { settingsFile: 'data/settings.json' };
     config.admin ||= { sessionTtlHours: 24, loginMaxAttempts: 8, loginWindowMinutes: 15 };
     delete config.targets;
   }
   writeJson(configPath, config);
   if (role === 'domestic') {
-    if (!settingsPath) throw new Error('国内节点缺少设置文件路径');
+    if (!settingsPath) throw new Error('管理节点缺少设置文件路径');
     if (!fs.existsSync(settingsPath)) {
       const password = process.env.NETPATH_PASSWORD || crypto.randomBytes(18).toString('base64url');
       if (password.length < 10) throw new Error('管理密码至少需要 10 个字符');
@@ -94,7 +95,7 @@ if (command === 'install') {
   if (config.security.token.length < 16) throw new Error('测速探针令牌至少需要 16 个字符');
   writeJson(configPath, config);
   console.log(`测速探针新令牌: ${config.security.token}`);
-  console.log('重启服务后生效，同时需要更新国内后台对应节点的令牌。');
+  console.log('重启服务后生效，同时需要更新管理后台对应测速节点的令牌。');
 } else {
   throw new Error('不支持的配置操作');
 }

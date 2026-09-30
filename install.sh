@@ -63,7 +63,7 @@ ensure_node() {
 if [[ -n "${NETPATH_ROLE:-}" ]]; then
   role="$NETPATH_ROLE"
 else
-  printf '选择本机节点类型:\n  1) 国内管理节点（网页与监控）\n  2) 国外测速节点\n'
+  printf '选择本机节点类型:\n  1) 管理节点（网页与监控）\n  2) 测速节点（连通性与带宽测试）\n'
   read -r -p '输入 1 或 2: ' choice
   case "$choice" in
     1) role=domestic ;;
@@ -75,11 +75,18 @@ if [[ "$role" != "domestic" && "$role" != "overseas" ]]; then
   printf 'NETPATH_ROLE 只能是 domestic 或 overseas。\n' >&2
   exit 1
 fi
+role_label='管理节点'
+if [[ "$role" == "overseas" ]]; then role_label='测速节点'; fi
 
 if [[ -f "$ETC_DIR/node.env" ]]; then
   existing_role="$(sed -n 's/^NETPATH_ROLE=//p' "$ETC_DIR/node.env" | head -n 1)"
   if [[ -n "$existing_role" && "$existing_role" != "$role" ]]; then
-    printf '本机已安装 %s 节点。请先处理现有安装。\n' "$existing_role" >&2
+    existing_label="$existing_role"
+    case "$existing_role" in
+      domestic) existing_label='管理节点' ;;
+      overseas) existing_label='测速节点' ;;
+    esac
+    printf '本机已安装%s。请先处理现有安装。\n' "$existing_label" >&2
     exit 1
   fi
 fi
@@ -161,7 +168,7 @@ install -m 0755 "$SOURCE_DIR/linux/netpath.sh" /usr/local/bin/netpath
 systemctl daemon-reload
 systemctl enable --now "$SERVICE_NAME"
 systemctl restart "$SERVICE_NAME"
-printf '\n安装完成。\n节点类型: %s\n监听端口: %s\n管理命令: netpath\n' "$role" "$chosen_port"
+printf '\n安装完成。\n节点类型: %s\n监听端口: %s\n管理命令: netpath\n' "$role_label" "$chosen_port"
 if [[ "$role" == "domestic" ]]; then
   printf '后台地址: http://服务器IP:%s/admin\n监控地址: http://服务器IP:%s/\n' "$chosen_port" "$chosen_port"
 else

@@ -22,6 +22,14 @@ function formatTime(timestamp, withSeconds = true) {
   }).format(new Date(timestamp));
 }
 
+function formatDateTime(timestamp) {
+  if (!timestamp) return '--';
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return '--';
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${formatTime(timestamp)}`;
+}
+
 function summarizeClient() {
   const samples = clientSamples.slice(-100);
   if (!samples.length) return { state: 'waiting', sampleCount: 0 };
@@ -92,6 +100,13 @@ function primaryTarget() {
   return latestStatus?.targets.find((target) => target.id === latestStatus.activeTargetId) || null;
 }
 
+function nodeNames(target = primaryTarget()) {
+  return {
+    manager: latestStatus?.dashboard?.relayName || '管理节点',
+    speed: target?.label || latestStatus?.dashboard?.overseasName || '测速节点',
+  };
+}
+
 function render() {
   if (!latestStatus) return;
   const client = summarizeClient();
@@ -100,8 +115,18 @@ function render() {
 
   document.title = latestStatus.dashboard.title;
   $('#dashboard-title').textContent = latestStatus.dashboard.title;
-  $('#relay-name').textContent = latestStatus.dashboard.relayName;
-  $('#overseas-name').textContent = latestStatus.dashboard.overseasName;
+  const names = nodeNames(target);
+  $('#relay-name').textContent = names.manager;
+  $('#relay-name').title = names.manager;
+  $('#overseas-name').textContent = names.speed;
+  $('#overseas-name').title = names.speed;
+  document.querySelectorAll('[data-route]').forEach((element) => {
+    const arrow = element.hasAttribute('data-bidirectional') ? '↔' : '→';
+    element.textContent = element.dataset.route === 'client'
+      ? `本地 ${arrow} ${names.manager}`
+      : `${names.manager} ${arrow} ${names.speed}`;
+    element.title = element.textContent;
+  });
   $('#overseas-endpoint').textContent = target?.enabled ? `${target.host}:${target.port}` : '未配置';
 
   $('#client-latency').textContent = formatNumber(client.latestMs);
@@ -137,24 +162,25 @@ function stateLabel(state) {
 }
 
 function renderDiagnosis(client, remote, target) {
+  const names = nodeNames(target);
   let state = 'waiting';
   let title = '正在采集数据';
   let copy = '至少完成一次两段链路探测后显示判断。';
 
   if (!target?.enabled) {
     state = 'disabled';
-    title = '国外节点尚未配置';
-    copy = '国内链路可用，但无法判断跨境链路状态。';
+    title = '测速节点尚未配置';
+    copy = `尚未配置${names.manager}到测速节点的探测目标。`;
   } else if (client.state === 'down' && remote.state === 'healthy') {
-    state = 'down'; title = '本地接入链路异常'; copy = '国内机到国外节点正常，故障更可能位于本地网络、运营商入口或本地到中转机之间。';
+    state = 'down'; title = '本地接入链路异常'; copy = `${names.manager}到${names.speed}正常，故障更可能位于本地网络、运营商入口或本地到${names.manager}之间。`;
   } else if (client.state === 'healthy' && ['down', 'degraded'].includes(remote.state)) {
-    state = remote.state; title = remote.state === 'down' ? '跨境链路中断' : '跨境链路出现波动'; copy = '本地到国内机正常，请检查国内中转机到国外探测端口的网络路径与目标服务。';
+    state = remote.state; title = remote.state === 'down' ? '节点间链路中断' : '节点间链路出现波动'; copy = `本地到${names.manager}正常，请检查${names.manager}到${names.speed}探测端口的网络路径与目标服务。`;
   } else if (['down', 'degraded'].includes(client.state) && ['down', 'degraded'].includes(remote.state)) {
-    state = 'down'; title = '两段链路同时异常'; copy = '优先检查国内中转机负载、出口网络和 HAProxy；也可能存在本地网络与跨境路径的叠加故障。';
+    state = 'down'; title = '两段链路同时异常'; copy = `优先检查${names.manager}负载和网络出口；也可能存在本地接入与节点间网络的叠加故障。`;
   } else if (client.state === 'healthy' && remote.state === 'healthy') {
     state = 'healthy'; title = '链路运行正常'; copy = '两段链路均可达，当前延迟、抖动和失败率处于阈值内。';
   } else if (client.state === 'degraded' && remote.state === 'healthy') {
-    state = 'degraded'; title = '本地接入存在波动'; copy = '跨境段稳定，当前抖动主要来自本地到国内中转机的路径。';
+    state = 'degraded'; title = '本地接入存在波动'; copy = `节点间链路稳定，当前抖动主要来自本地到${names.manager}的路径。`;
   }
 
   const overall = $('#overall-status');
@@ -187,7 +213,14 @@ function renderEvents(events) {
   }
   rows.replaceChildren(...events.map((event) => {
     const row = document.createElement('tr');
-    const cells = [formatTime(event.timestamp), event.targetLabel, event.message];
+    const timeCell = document.createElement('td');
+    timeCell.className = 'event-time';
+    const time = document.createElement('time');
+    time.dateTime = event.timestamp;
+    time.textContent = formatDateTime(event.timestamp);
+    timeCell.append(time);
+    row.append(timeCell);
+    const cells = [event.targetLabel, event.message];
     for (const value of cells) {
       const cell = document.createElement('td');
       cell.textContent = value;
@@ -250,19 +283,20 @@ async function runSpeedTest() {
     const sessionResponse = await fetch('/api/admin/session', { cache: 'no-store' });
     const session = await sessionResponse.json();
     if (!session.authenticated) throw new Error('请先登录管理后台，再返回测速');
-    $('#speed-progress-text').textContent = '正在测试本地到国内中转';
+    $('#speed-progress-text').textContent = `正在测试本地与${nodeNames().manager}的带宽`;
     const local = await runLocalSpeedTest();
     $('#local-download').textContent = formatNumber(local.downloadMbps);
     $('#local-upload').textContent = formatNumber(local.uploadMbps);
 
     const target = primaryTarget();
-    if (!target?.enabled) throw new Error('国外节点未配置');
-    $('#speed-progress-text').textContent = '正在测试国内中转到国外节点';
+    if (!target?.enabled) throw new Error('测速节点未配置');
+    const names = nodeNames(target);
+    $('#speed-progress-text').textContent = `正在测试${names.manager}与${names.speed}的带宽`;
     const response = await fetch('/api/remote-speed-test', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: target.id }),
     });
     const remote = await response.json();
-    if (!response.ok) throw new Error(remote.error || '跨境测速失败');
+    if (!response.ok) throw new Error(remote.error || '节点间测速失败');
     $('#remote-download').textContent = formatNumber(remote.downloadMbps);
     $('#remote-upload').textContent = formatNumber(remote.uploadMbps);
     $('#speed-last-run').textContent = `完成于 ${formatTime(remote.timestamp)}`;

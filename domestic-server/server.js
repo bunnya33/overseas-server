@@ -515,7 +515,7 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (activeRemoteSpeedTest) {
-      sendJson(response, 409, { error: '已有跨境测速正在运行' });
+      sendJson(response, 409, { error: '已有节点间测速正在运行' });
       request.resume();
       return;
     }
@@ -566,7 +566,7 @@ const server = http.createServer(async (request, response) => {
 server.listen(config.server.port, config.server.host, async () => {
   console.log(`链路观察台已启动: http://${config.server.host}:${config.server.port}`);
   console.log(`管理后台: http://${config.server.host}:${config.server.port}/admin`);
-  if (!runtimeState().targets.length) console.log('尚未配置国外节点，请登录管理后台添加。');
+  if (!runtimeState().targets.length) console.log('尚未配置测速节点，请登录管理后台添加。');
   await monitor.start();
 });
 

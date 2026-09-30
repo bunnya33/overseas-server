@@ -159,7 +159,7 @@ const server = http.createServer((request, response) => {
 });
 
 server.listen(serverPort, serverHost, () => {
-  console.log(`国外测速探针已启动: http://${serverHost}:${serverPort}`);
+  console.log(`测速节点已启动: http://${serverHost}:${serverPort}`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {

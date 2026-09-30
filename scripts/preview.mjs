@@ -74,8 +74,8 @@ async function main() {
     admin: { username: 'admin', ...hashPassword(password) },
   }, null, 2)}\n`, { mode: 0o600 });
 
-  start('探针 A', 'overseas-server', { HOST: '127.0.0.1', PORT: String(firstPort), AGENT_TOKEN: token });
-  start('探针 B', 'overseas-server', { HOST: '127.0.0.1', PORT: String(secondPort), AGENT_TOKEN: token });
+  start('测速节点 A', 'overseas-server', { HOST: '127.0.0.1', PORT: String(firstPort), AGENT_TOKEN: token });
+  start('测速节点 B', 'overseas-server', { HOST: '127.0.0.1', PORT: String(secondPort), AGENT_TOKEN: token });
   const domesticEnv = { ...process.env, HOST: '127.0.0.1', PORT: String(domesticPort), SETTINGS_FILE: settingsPath };
   for (const key of ['OVERSEAS_HOST', 'OVERSEAS_PORT', 'OVERSEAS_SPEED_URL', 'OVERSEAS_AGENT_TOKEN']) delete domesticEnv[key];
   start('管理节点', 'domestic-server', domesticEnv);
