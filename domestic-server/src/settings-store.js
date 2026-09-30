@@ -55,8 +55,13 @@ export class SettingsStore {
   write(settings) {
     fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
     const temporaryPath = `${this.filePath}.${process.pid}.tmp`;
+    const temporaryBackupPath = `${this.backupPath}.${process.pid}.tmp`;
     fs.writeFileSync(temporaryPath, `${JSON.stringify(settings, null, 2)}\n`, { mode: 0o600 });
-    if (fs.existsSync(this.filePath)) fs.copyFileSync(this.filePath, this.backupPath);
+    if (fs.existsSync(this.filePath)) {
+      fs.copyFileSync(this.filePath, temporaryBackupPath);
+      fs.chmodSync(temporaryBackupPath, 0o600);
+      fs.renameSync(temporaryBackupPath, this.backupPath);
+    }
     fs.renameSync(temporaryPath, this.filePath);
   }
 }
