@@ -30,10 +30,17 @@ trap 'rm -rf -- "$work_dir"' EXIT
 mkdir "$work_dir/source"
 
 printf '正在下载链路观察台...\n'
-curl -fsSL --retry 3 --retry-delay 1 \
+if curl -fsSL --retry 3 --retry-delay 1 \
   https://github.com/bunnya33/overseas-server/archive/refs/heads/main.tar.gz \
-  -o "$work_dir/source.tar.gz"
-tar -xzf "$work_dir/source.tar.gz" -C "$work_dir/source" --strip-components=1
+  -o "$work_dir/source.tar.gz" && tar -tzf "$work_dir/source.tar.gz" >/dev/null 2>&1; then
+  tar -xzf "$work_dir/source.tar.gz" -C "$work_dir/source" --strip-components=1
+elif command -v git >/dev/null 2>&1; then
+  printf '归档下载失败，改用 Git 获取项目...\n'
+  git clone --depth 1 https://github.com/bunnya33/overseas-server.git "$work_dir/source"
+else
+  printf '下载失败。请安装 git 后重新运行，或手动克隆仓库。\n' >&2
+  exit 1
+fi
 if [[ ! -f "$work_dir/source/install.sh" ]]; then
   printf '下载的项目中缺少 install.sh。\n' >&2
   exit 1

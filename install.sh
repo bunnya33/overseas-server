@@ -1,4 +1,11 @@
-#!/usr/bin/env bash
+#!/bin/sh
+if [ -z "${BASH_VERSION:-}" ]; then
+  if ! command -v bash >/dev/null 2>&1; then
+    printf '此安装脚本需要 Bash，请先安装 bash。\n' >&2
+    exit 1
+  fi
+  exec bash "$0" "$@"
+fi
 set -euo pipefail
 
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -8,19 +8,23 @@
 
 ## Linux 安装
 
-在两台 Linux 服务器上分别运行同一条命令，按提示选择本机节点类型和监听端口：
+在两台 Linux 服务器上分别安装。若服务器可以访问 GitHub 仓库，推荐先克隆再运行：
+
+```bash
+git clone https://github.com/bunnya33/overseas-server.git
+cd overseas-server
+sudo ./install.sh
+```
+
+已经克隆过项目时，在项目目录执行 `sudo bash install.sh` 即可。不要使用旧版本的 `sh install.sh`；旧脚本中的 `pipefail` 需要 Bash。更新到新版后，`sudo sh install.sh` 也会自动转用 Bash。
+
+也提供一行 `curl` 命令，但部分网络无法访问 `raw.githubusercontent.com`；遇到 `curl: (52) Empty reply from server` 时请使用上面的 Git 克隆方式：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/bunnya33/overseas-server/main/bootstrap.sh | sudo bash
 ```
 
-该命令需要 `curl`、`tar` 和交互终端；引导脚本会下载完整项目并运行安装脚本。也可以手动获取项目再安装：
-
-```bash
-git clone https://github.com/bunnya33/overseas-server.git
-cd overseas-server
-sudo bash install.sh
-```
+引导脚本需要 `curl`、`tar` 和交互终端；下载归档失败时会尝试使用 `git clone`。两种方式都会提示选择本机节点类型和监听端口。
 
 安装时选择：
 
