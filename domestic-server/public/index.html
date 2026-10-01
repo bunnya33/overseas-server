@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
     <title>链路观察台</title>
-    <link rel="stylesheet" href="/styles.css?v=3">
+    <link rel="stylesheet" href="/styles.css?v=4">
   </head>
   <body>
     <header class="topbar">
@@ -110,6 +110,42 @@
           </aside>
         </section>
 
+        <section class="panel history-panel" aria-labelledby="connection-history-title">
+          <div class="panel-header">
+            <div><h2 id="connection-history-title">近期连接记录</h2><p id="history-context">每个节点保留最近 30 次，平均值仅统计有效结果</p></div>
+            <div class="history-actions">
+              <span class="event-count" id="connection-history-count">0 / 30 次</span>
+              <button id="copy-statistics" class="secondary-button" type="button" disabled>复制统计结果</button>
+            </div>
+          </div>
+          <div class="history-averages">
+            <div class="history-average">
+              <span data-route="client">本地 → 管理节点</span>
+              <div><b id="local-average-latency">--</b><small> ms 平均延迟</small></div>
+              <p id="local-connection-count">有效 0 / 采样 0 次</p>
+            </div>
+            <div class="history-average">
+              <span data-route="remote">管理节点 → 测速节点</span>
+              <div><b id="remote-average-latency">--</b><small> ms 平均延迟</small></div>
+              <p id="remote-connection-count">有效 0 / 采样 0 次</p>
+            </div>
+          </div>
+          <div class="table-wrap history-table-wrap" tabindex="0" aria-label="近期连接测试记录">
+            <table>
+              <thead><tr><th>日期 / 时间</th><th data-route="client">本地 → 管理节点</th><th data-route="remote">管理节点 → 测速节点</th><th>状态</th></tr></thead>
+              <tbody id="connection-history-rows"><tr><td colspan="4" class="empty-row">等待连接测试记录</td></tr></tbody>
+            </table>
+          </div>
+          <div class="history-notes">
+            <p>每个节点保留最近 30 次。失败不计入平均值，-- 表示本轮未取得新数据。</p>
+            <p id="copy-feedback" role="status" aria-live="polite">复制会包含连接与带宽两类统计；粘贴到文档时保留源格式，纯文本请使用等宽字体。</p>
+          </div>
+          <details id="statistics-export" class="statistics-export">
+            <summary>查看可复制的统计结果</summary>
+            <pre id="statistics-text" tabindex="0">等待监测数据</pre>
+          </details>
+        </section>
+
         <section class="panel speed-panel">
           <div class="speed-intro">
             <div class="panel-header">
@@ -132,6 +168,41 @@
           <div class="speed-progress" id="speed-progress" hidden><span></span><b id="speed-progress-text">准备测速</b></div>
         </section>
 
+        <section class="panel history-panel" aria-labelledby="speed-history-title">
+          <div class="panel-header">
+            <div><h2 id="speed-history-title">近期带宽记录</h2><p>每个节点保留最近 10 次，下载与上传分别计算平均值</p></div>
+            <span class="event-count" id="speed-history-count">0 / 10 次</span>
+          </div>
+          <div class="history-averages">
+            <div class="history-average">
+              <span data-route="client" data-bidirectional>本地 ↔ 管理节点</span>
+              <div class="speed-average-values">
+                <div><b id="local-average-download">--</b><small> Mbps 平均下载</small></div>
+                <div><b id="local-average-upload">--</b><small> Mbps 平均上传</small></div>
+              </div>
+              <p id="local-speed-count">有效下载 0 / 0 次 · 有效上传 0 / 0 次</p>
+            </div>
+            <div class="history-average">
+              <span data-route="remote" data-bidirectional>管理节点 ↔ 测速节点</span>
+              <div class="speed-average-values">
+                <div><b id="remote-average-download">--</b><small> Mbps 平均下载</small></div>
+                <div><b id="remote-average-upload">--</b><small> Mbps 平均上传</small></div>
+              </div>
+              <p id="remote-speed-count">有效下载 0 / 0 次 · 有效上传 0 / 0 次</p>
+            </div>
+          </div>
+          <div class="table-wrap history-table-wrap" tabindex="0" aria-label="近期带宽测试记录">
+            <table>
+              <thead>
+                <tr><th rowspan="2">日期 / 时间</th><th colspan="2" data-route="client" data-bidirectional>本地 ↔ 管理节点</th><th colspan="2" data-route="remote" data-bidirectional>管理节点 ↔ 测速节点</th><th rowspan="2">状态</th></tr>
+                <tr><th>下载 (Mbps)</th><th>上传 (Mbps)</th><th>下载 (Mbps)</th><th>上传 (Mbps)</th></tr>
+              </thead>
+              <tbody id="speed-history-rows"><tr><td colspan="6" class="empty-row">点击「开始测速」后显示记录</td></tr></tbody>
+            </table>
+          </div>
+          <div class="history-notes"><p>失败记录仍会保留，平均值只统计记录中的有效方向。记录只来自当前浏览器发起的测速。</p></div>
+        </section>
+
         <section class="panel event-panel">
           <div class="panel-header">
             <div><h2>故障时间线</h2><p>仅记录状态变化</p></div>
@@ -147,6 +218,6 @@
       </div>
     </main>
 
-    <script type="module" src="/app.js?v=4"></script>
+    <script type="module" src="/app.js?v=5"></script>
   </body>
 </html>

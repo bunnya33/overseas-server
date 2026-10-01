@@ -1,9 +1,16 @@
+import { buildStatisticsReport, createHistory, formatDateTime, historyKey, recordConnection, recordSpeed, summarizeHistory } from './history.js?v=1';
+
 const CLIENT_HISTORY_LIMIT = 600;
+const HISTORY_STORAGE_KEY = 'netpath.observation-history.v1';
 const clientSamples = [];
 let latestStatus = null;
 let pollTimer = null;
 let polling = false;
 let speedTesting = false;
+let speedTestKey = null;
+let speedNotice = null;
+let historyStorageAvailable = true;
+const histories = loadHistories();
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -22,12 +29,29 @@ function formatTime(timestamp, withSeconds = true) {
   }).format(new Date(timestamp));
 }
 
-function formatDateTime(timestamp) {
-  if (!timestamp) return '--';
-  const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return '--';
-  const pad = (value) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${formatTime(timestamp)}`;
+function loadHistories() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || '{}');
+    return new Map(Object.entries(saved.routes || {}).map(([key, value]) => [key, createHistory(value)]));
+  } catch {
+    historyStorageAvailable = false;
+    return new Map();
+  }
+}
+
+function saveHistories() {
+  try {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify({ version: 1, routes: Object.fromEntries(histories) }));
+    historyStorageAvailable = true;
+  } catch {
+    historyStorageAvailable = false;
+  }
+}
+
+function currentHistory(target = primaryTarget(), manager = nodeNames(target).manager) {
+  const key = historyKey(manager, target);
+  if (!histories.has(key)) histories.set(key, createHistory());
+  return histories.get(key);
 }
 
 function summarizeClient() {
@@ -57,30 +81,39 @@ function summarizeClient() {
 
 async function clientProbe() {
   const started = performance.now();
+  let sample;
   try {
     const response = await fetch(`/api/client-ping?_=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    clientSamples.push({ timestamp: new Date().toISOString(), ok: true, latencyMs: round(performance.now() - started) });
+    sample = { timestamp: new Date().toISOString(), ok: true, latencyMs: round(performance.now() - started) };
   } catch (error) {
-    clientSamples.push({ timestamp: new Date().toISOString(), ok: false, latencyMs: null, error: error.message });
+    sample = { timestamp: new Date().toISOString(), ok: false, latencyMs: null, error: error.message };
   }
+  clientSamples.push(sample);
   if (clientSamples.length > CLIENT_HISTORY_LIMIT) clientSamples.shift();
+  return sample;
 }
 
 async function refresh() {
   if (polling) return;
   polling = true;
   try {
-    const [response] = await Promise.all([
-      fetch(`/api/status?_=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(5000) }),
+    const [status, client] = await Promise.allSettled([
+      fetch(`/api/status?_=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(5000) }).then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      }),
       clientProbe(),
     ]);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    latestStatus = await response.json();
-    setConnectionState(true);
-    render();
-  } catch {
-    setConnectionState(false);
+    const synced = status.status === 'fulfilled';
+    if (synced) latestStatus = status.value;
+    setConnectionState(synced);
+    if (latestStatus && client.status === 'fulfilled') {
+      const target = primaryTarget();
+      const remoteSample = synced && target?.enabled ? target.samples?.at(-1) : null;
+      recordConnection(currentHistory(target), client.value, remoteSample);
+      saveHistories();
+    }
     render();
   } finally {
     polling = false;
@@ -154,6 +187,7 @@ function render() {
   renderSignals(target);
   renderEvents(latestStatus.events || []);
   renderStoredSpeed(target);
+  renderHistory(target);
   drawChart(clientSamples, target?.samples || []);
 }
 
@@ -237,11 +271,109 @@ function renderEvents(events) {
 }
 
 function renderStoredSpeed(target) {
-  const result = target && latestStatus.speedResults?.[target.id];
-  if (!result || speedTesting) return;
-  $('#remote-download').textContent = formatNumber(result.downloadMbps);
-  $('#remote-upload').textContent = formatNumber(result.uploadMbps);
-  $('#speed-last-run').textContent = `上次测速 ${formatTime(result.timestamp)}`;
+  const key = historyKey(nodeNames(target).manager, target);
+  if (speedTesting && key === speedTestKey) return;
+  const recent = currentHistory(target).speeds.at(-1);
+  const stored = target && latestStatus.speedResults?.[target.id];
+  $('#local-download').textContent = formatNumber(recent?.local.downloadMbps);
+  $('#local-upload').textContent = formatNumber(recent?.local.uploadMbps);
+  $('#remote-download').textContent = formatNumber(recent ? recent.remote.downloadMbps : stored?.downloadMbps);
+  $('#remote-upload').textContent = formatNumber(recent ? recent.remote.uploadMbps : stored?.uploadMbps);
+  const errors = [recent?.local.error, recent?.remote.error].filter(Boolean);
+  $('#speed-last-run').textContent = speedNotice?.key === key ? speedNotice.message : recent
+    ? `${formatDateTime(recent.timestamp)}${errors.length ? ` · ${errors.join('；')}` : ' · 测速完成'}`
+    : stored ? `节点上次测速 ${formatDateTime(stored.timestamp)}` : '尚未测速';
+}
+
+function addCell(row, text, className = '', title = '') {
+  const cell = document.createElement('td');
+  cell.textContent = text;
+  cell.className = className;
+  if (title) cell.title = title;
+  row.append(cell);
+}
+
+function latencyText(sample) {
+  return sample ? sample.ok ? `${formatNumber(sample.latencyMs)} ms` : '失败' : '--';
+}
+
+function renderHistory(target) {
+  const history = currentHistory(target);
+  const summary = summarizeHistory(history);
+  const names = nodeNames(target);
+  $('#connection-history-count').textContent = `${summary.connectionCount} / 30 次`;
+  $('#speed-history-count').textContent = `${summary.speedCount} / 10 次`;
+  $('#history-context').textContent = `${names.manager} → ${names.speed} · ${historyStorageAvailable ? '记录保存在当前浏览器，刷新后保留' : '浏览器存储不可用，仅保留本次打开期间的记录'}`;
+  for (const [route, value] of [['local', summary.localConnection], ['remote', summary.remoteConnection]]) {
+    $(`#${route}-average-latency`).textContent = formatNumber(value.average);
+    $(`#${route}-connection-count`).textContent = `有效 ${value.validCount} / 采样 ${value.count} 次 · 失败 ${value.failedCount} 次${value.missingCount ? ` · 缺失 ${value.missingCount} 次` : ''}`;
+  }
+  for (const [route, value] of [['local', summary.localSpeed], ['remote', summary.remoteSpeed]]) {
+    $(`#${route}-average-download`).textContent = formatNumber(value.download.average);
+    $(`#${route}-average-upload`).textContent = formatNumber(value.upload.average);
+    $(`#${route}-speed-count`).textContent = `有效下载 ${value.download.validCount} / ${summary.speedCount} 次 · 有效上传 ${value.upload.validCount} / ${summary.speedCount} 次`;
+  }
+  const connections = $('#connection-history-rows');
+  if (!history.connections.length) connections.innerHTML = '<tr><td colspan="4" class="empty-row">等待连接测试记录</td></tr>';
+  else connections.replaceChildren(...history.connections.slice().reverse().map((record) => {
+    const row = document.createElement('tr');
+    addCell(row, formatDateTime(record.timestamp), 'event-time');
+    addCell(row, latencyText(record.local), `measurement ${record.local.ok ? '' : 'measurement-error'}`, record.local.error);
+    addCell(row, latencyText(record.remote), `measurement ${record.remote && !record.remote.ok ? 'measurement-error' : ''}`, record.remote ? `${formatDateTime(record.remote.timestamp)}${record.remote.error ? ` · ${record.remote.error}` : ''}` : '本轮未取得新的节点采样');
+    const failed = !record.local.ok || record.remote?.ok === false;
+    addCell(row, failed ? '异常' : record.remote ? '正常' : '待采样', failed ? 'measurement-error' : 'record-status');
+    return row;
+  }));
+  const speeds = $('#speed-history-rows');
+  if (!history.speeds.length) speeds.innerHTML = '<tr><td colspan="6" class="empty-row">点击「开始测速」后显示记录</td></tr>';
+  else speeds.replaceChildren(...history.speeds.slice().reverse().map((record) => {
+    const row = document.createElement('tr');
+    addCell(row, formatDateTime(record.timestamp), 'event-time');
+    for (const route of ['local', 'remote']) {
+      for (const direction of ['downloadMbps', 'uploadMbps']) {
+        const value = record[route][direction];
+        addCell(row, formatNumber(value), `measurement ${value == null ? 'measurement-error' : ''}`, record[route].error);
+      }
+    }
+    const errors = [record.local.error, record.remote.error].filter(Boolean);
+    const complete = [record.local.downloadMbps, record.local.uploadMbps, record.remote.downloadMbps, record.remote.uploadMbps].every(Number.isFinite);
+    addCell(row, complete ? '完成' : '未完成', complete ? 'record-status' : 'measurement-error', errors.join('；'));
+    return row;
+  }));
+  $('#copy-statistics').disabled = !summary.connectionCount && !summary.speedCount;
+  // Keep an expanded export stable while the user selects text for manual copy.
+  if (!$('#statistics-export').open) $('#statistics-text').textContent = buildStatisticsReport(history, names).text;
+}
+
+async function copyStatistics() {
+  const report = buildStatisticsReport(currentHistory(), nodeNames());
+  $('#statistics-text').textContent = report.text;
+  let copied = false;
+  try {
+    if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/plain': new Blob([report.text], { type: 'text/plain' }),
+        'text/html': new Blob([report.html], { type: 'text/html' }),
+      })]);
+    } else {
+      await navigator.clipboard.writeText(report.text);
+    }
+    copied = true;
+  } catch {
+    // HTTP dashboards may not have the Clipboard API; retain a user-click fallback.
+    const textarea = document.createElement('textarea');
+    textarea.className = 'clipboard-helper';
+    textarea.value = report.text;
+    textarea.readOnly = true;
+    const previousFocus = document.activeElement;
+    document.body.append(textarea);
+    textarea.select();
+    try { copied = document.execCommand('copy'); } catch { copied = false; }
+    textarea.remove();
+    previousFocus?.focus({ preventScroll: true });
+  }
+  $('#copy-feedback').textContent = copied ? '已复制连接与带宽统计结果' : '自动复制不可用，请在下方选中结果手动复制';
+  if (!copied) $('#statistics-export').open = true;
 }
 
 function makeRandomBytes(size) {
@@ -256,56 +388,71 @@ function mbps(bytes, durationMs) {
   return round((bytes * 8) / (durationMs / 1000) / 1_000_000);
 }
 
-async function runLocalSpeedTest() {
+async function runLocalSpeedTest(result) {
   const downloadBytes = 8 * 1024 * 1024;
   let started = performance.now();
-  const download = await fetch(`/api/speed/download?bytes=${downloadBytes}&_=${Date.now()}`, { cache: 'no-store' });
+  const download = await fetch(`/api/speed/download?bytes=${downloadBytes}&_=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(30000) });
   if (!download.ok) throw new Error('本地下载测速失败');
   const downloaded = (await download.arrayBuffer()).byteLength;
-  const downloadMbps = mbps(downloaded, performance.now() - started);
+  result.downloadMbps = mbps(downloaded, performance.now() - started);
 
   const uploadBody = makeRandomBytes(4 * 1024 * 1024);
   started = performance.now();
-  const upload = await fetch('/api/speed/upload', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: uploadBody });
+  const upload = await fetch('/api/speed/upload', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: uploadBody, signal: AbortSignal.timeout(30000) });
   if (!upload.ok) throw new Error('本地上传测速失败');
-  const result = await upload.json();
-  return { downloadMbps, uploadMbps: mbps(result.bytes, performance.now() - started) };
+  const uploaded = await upload.json();
+  result.uploadMbps = mbps(uploaded.bytes, performance.now() - started);
 }
 
 async function runSpeedTest() {
   if (speedTesting) return;
   speedTesting = true;
+  speedNotice = null;
   const button = $('#speed-button');
   const progress = $('#speed-progress');
   button.disabled = true;
   progress.hidden = false;
+  let history = null;
+  let record = null;
   try {
-    const sessionResponse = await fetch('/api/admin/session', { cache: 'no-store' });
-    const session = await sessionResponse.json();
-    if (!session.authenticated) throw new Error('请先登录管理后台，再返回测速');
-    $('#speed-progress-text').textContent = `正在测试本地与${nodeNames().manager}的带宽`;
-    const local = await runLocalSpeedTest();
-    $('#local-download').textContent = formatNumber(local.downloadMbps);
-    $('#local-upload').textContent = formatNumber(local.uploadMbps);
-
     const target = primaryTarget();
     if (!target?.enabled) throw new Error('测速节点未配置');
     const names = nodeNames(target);
+    speedTestKey = historyKey(names.manager, target);
+    const sessionResponse = await fetch('/api/admin/session', { cache: 'no-store' });
+    const session = await sessionResponse.json();
+    if (!session.authenticated) throw new Error('请先登录管理后台，再返回测速');
+    history = currentHistory(target, names.manager);
+    record = { timestamp: new Date().toISOString(), local: {}, remote: {} };
+    for (const id of ['local-download', 'local-upload', 'remote-download', 'remote-upload']) $(`#${id}`).textContent = '--';
+    $('#speed-progress-text').textContent = `正在测试本地与${names.manager}的带宽`;
+    try { await runLocalSpeedTest(record.local); }
+    catch (error) { record.local.error = `本地测速：${error.message}`; }
+    if (historyKey(nodeNames().manager, primaryTarget()) === speedTestKey) {
+      $('#local-download').textContent = formatNumber(record.local.downloadMbps);
+      $('#local-upload').textContent = formatNumber(record.local.uploadMbps);
+    }
     $('#speed-progress-text').textContent = `正在测试${names.manager}与${names.speed}的带宽`;
-    const response = await fetch('/api/remote-speed-test', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: target.id }),
-    });
-    const remote = await response.json();
-    if (!response.ok) throw new Error(remote.error || '节点间测速失败');
-    $('#remote-download').textContent = formatNumber(remote.downloadMbps);
-    $('#remote-upload').textContent = formatNumber(remote.uploadMbps);
-    $('#speed-last-run').textContent = `完成于 ${formatTime(remote.timestamp)}`;
+    try {
+      const response = await fetch('/api/remote-speed-test', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: target.id }),
+      });
+      const remote = await response.json();
+      if (!response.ok) throw new Error(remote.error || '节点间测速失败');
+      record.remote = remote;
+    } catch (error) { record.remote.error = `节点间测速：${error.message}`; }
+    record.timestamp = new Date().toISOString();
+    recordSpeed(history, record);
+    saveHistories();
   } catch (error) {
+    speedNotice = { key: speedTestKey || historyKey(nodeNames().manager, primaryTarget()), message: error.message };
     $('#speed-last-run').textContent = error.message;
   } finally {
     speedTesting = false;
+    speedTestKey = null;
     button.disabled = false;
     progress.hidden = true;
+    if (record) { renderStoredSpeed(primaryTarget()); renderHistory(primaryTarget()); }
   }
 }
 
@@ -367,6 +514,7 @@ function drawChart(local, remote) {
 
 $('#refresh-button').addEventListener('click', refresh);
 $('#speed-button').addEventListener('click', runSpeedTest);
+$('#copy-statistics').addEventListener('click', copyStatistics);
 window.addEventListener('resize', () => latestStatus && drawChart(clientSamples, primaryTarget()?.samples || []));
 setInterval(() => { $('#clock').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false }); }, 1000);
 refresh();
